@@ -105,7 +105,20 @@ class _ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("💬 MiChat"),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.chat_bubble, color: Colors.white),
+            SizedBox(width: 8),
+            Text(
+              "MiChat",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
         backgroundColor: Color(0xFF2E7D32),
         centerTitle: true,
       ),

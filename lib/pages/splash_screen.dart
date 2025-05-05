@@ -34,7 +34,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             SizedBox(height: 20),
             Text(
-              "GreenChat",
+              "MiChat",
               style: TextStyle(
                 fontSize: 32,
                 color: Colors.white,

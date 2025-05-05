@@ -28,49 +28,36 @@ class _CameraPageState extends State<CameraPage> {
   }
 
   Future<void> _initializeCamera() async {
-    final start = DateTime.now();
-    print("🟡 Mulai request permission: $start");
-
     if (!kIsWeb) {
       final status = await Permission.camera.request();
       if (!status.isGranted) {
-        print("❌ Kamera tidak diizinkan");
+        print("Kamera tidak diizinkan");
         Navigator.pop(context);
         return;
       }
     }
 
     try {
-      print("🟡 Request daftar kamera...");
       _cameras = await availableCameras();
-      print("✅ Dapat kamera (${_cameras.length}) pada ${DateTime.now()}");
       _startCamera(_selectedCameraIndex);
     } catch (e) {
-      print("❌ Gagal mendapatkan kamera: $e");
+      print("Gagal mendapatkan kamera: $e");
       Navigator.pop(context);
     }
   }
 
-
   void _startCamera(int cameraIndex) async {
-    final startInit = DateTime.now();
-    print("⚙️ Mulai inisialisasi kamera index $cameraIndex: $startInit");
-
     await _controller?.dispose();
-    _controller = CameraController(_cameras[cameraIndex], ResolutionPreset.medium);
+    _controller = CameraController(_cameras[cameraIndex], ResolutionPreset.high);
 
     try {
       await _controller!.initialize();
       if (!mounted) return;
-
-      final endInit = DateTime.now();
-      print("✅ Kamera siap: $endInit (waktu inisialisasi: ${endInit.difference(startInit).inMilliseconds} ms)");
-
       setState(() {
         _previewImage = null;
       });
     } catch (e) {
-      print("❌ Gagal inisialisasi kamera: $e");
+      print("Gagal inisialisasi kamera: $e");
     }
   }
 
@@ -125,7 +112,18 @@ class _CameraPageState extends State<CameraPage> {
       body: Stack(
         children: [
           if (_previewImage == null)
-            Positioned.fill(child: CameraPreview(_controller!))
+            Positioned.fill(
+              child: _controller!.value.previewSize != null
+                  ? FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _controller!.value.previewSize!.height,
+                  height: _controller!.value.previewSize!.width,
+                  child: CameraPreview(_controller!),
+                ),
+              )
+                  : Container(color: Colors.black),
+            )
           else
             Positioned.fill(
               child: Image.file(
