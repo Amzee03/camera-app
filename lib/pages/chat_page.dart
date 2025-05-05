@@ -1,13 +1,13 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'camera.dart';
 
 class Message {
   final String? text;
   final File? image;
+  final bool isFromPartner;
 
-  Message({this.text, this.image});
+  Message({this.text, this.image, this.isFromPartner = false});
 }
 
 class ChatPage extends StatefulWidget {
@@ -17,14 +17,36 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final List<Message> _messages = [];
-  final TextEditingController _controller = TextEditingController();
+  final _controller = TextEditingController();
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+
+  @override
+  void initState() {
+    super.initState();
+
+    Future.delayed(Duration(milliseconds: 500), () {
+      _addMessage(Message(
+        text: "Sayanggg 🤭",
+        isFromPartner: true,
+      ));
+      Future.delayed(Duration(milliseconds: 500), () {
+        _addMessage(Message(
+          text: "Kamu lagi ngapain? Kirimin aku foto gantengmu dong~ 📸🥰",
+          isFromPartner: true,
+        ));
+      });
+    });
+  }
+
+  void _addMessage(Message message) {
+    _messages.add(message);
+    _listKey.currentState?.insertItem(_messages.length - 1);
+  }
 
   void _sendTextMessage() {
     if (_controller.text.trim().isEmpty) return;
-    setState(() {
-      _messages.add(Message(text: _controller.text.trim()));
-      _controller.clear();
-    });
+    _addMessage(Message(text: _controller.text.trim()));
+    _controller.clear();
   }
 
   Future<void> _sendImageMessage() async {
@@ -33,58 +55,69 @@ class _ChatPageState extends State<ChatPage> {
       MaterialPageRoute(
         builder: (context) => CameraPage(
           onImageCaptured: (File image) {
-            setState(() {
-              _messages.add(Message(image: image));
-            });
+            _addMessage(Message(image: image));
           },
         ),
       ),
     );
   }
 
-  Widget _buildMessage(Message message) {
-    if (message.image != null) {
-      return Container(
-        margin: EdgeInsets.symmetric(vertical: 5),
-        alignment: Alignment.centerLeft,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.file(message.image!, height: 200),
+  Widget _buildMessage(Message message, Animation<double> animation) {
+    final isPartner = message.isFromPartner;
+    final alignment = isPartner ? Alignment.centerLeft : Alignment.centerRight;
+    final color = isPartner ? Colors.white : Color(0xFFA5D6A7);
+
+    return SizeTransition(
+      sizeFactor: animation,
+      axisAlignment: 0.0,
+      child: Align(
+        alignment: alignment,
+        child: Container(
+          margin: EdgeInsets.symmetric(vertical: 5, horizontal: 8),
+          padding: message.image == null ? EdgeInsets.all(12) : EdgeInsets.zero,
+          decoration: BoxDecoration(
+            color: message.image == null ? color : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              if (message.image == null)
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+            ],
+          ),
+          child: message.image != null
+              ? ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.file(message.image!, height: 200),
+          )
+              : Text(
+            message.text ?? "",
+            style: TextStyle(fontSize: 16),
+          ),
         ),
-      );
-    } else {
-      return Container(
-        margin: EdgeInsets.symmetric(vertical: 5),
-        padding: EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Color(0xFFA5D6A7),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        alignment: Alignment.centerLeft,
-        child: Text(
-          message.text ?? "",
-          style: TextStyle(fontSize: 16),
-        ),
-      );
-    }
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("🌿 GreenChat"),
+        title: Text("💬 MiChat"),
         backgroundColor: Color(0xFF2E7D32),
-        elevation: 4,
         centerTitle: true,
       ),
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
+            child: AnimatedList(
+              key: _listKey,
               padding: EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) => _buildMessage(_messages[index]),
+              initialItemCount: _messages.length,
+              itemBuilder: (context, index, animation) =>
+                  _buildMessage(_messages[index], animation),
             ),
           ),
           Container(
@@ -111,7 +144,7 @@ class _ChatPageState extends State<ChatPage> {
                     child: TextField(
                       controller: _controller,
                       decoration: InputDecoration(
-                        hintText: "Ketik pesan...",
+                        hintText: "Balas...",
                         border: InputBorder.none,
                       ),
                       onSubmitted: (_) => _sendTextMessage(),
